@@ -1,8 +1,13 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
+import axios from 'axios';
 import Header from '../../components/header/index';
 import DatePicker from '../../components/datePicker/index';
 import DayNightMenu from '../../components/dayNightMenu/index';
+import ChoosenDate from '../../components/choosenDate/index';
+import MediaCard from '../../components/cardMenu/index';
+import CardSnakeBar from '../../components/cartSnakeBar/index';
+import SearchAddress from '../../components/searchLocation/index';
 
 class HomePage extends Component {
 	constructor(props) {
@@ -21,12 +26,7 @@ class HomePage extends Component {
 			paddingBottom: '75px'
 		};
 	}
-	handleAddress = () => {
-		this.setState({
-			openAddress: true,
-			resultAddress: []
-		})
-	}
+
 	getListDate = () => {
 		let listDate = []
 		for (let index = 0; index < 14; index++) {
@@ -60,6 +60,13 @@ class HomePage extends Component {
 			day: e
 		})
 	}
+	handleCart = (e) => {
+		let data = this.state.item
+		data.push(e)
+		this.setState({
+			item: data
+		})
+	}
 	handleScroll = (e) => {
 		let positionY = window.pageYOffset
 		if (positionY!==0) {
@@ -72,6 +79,50 @@ class HomePage extends Component {
 			})
 		}
 	}
+	handleChange = (e) => {
+		this.handleSearch(e.target.value)
+	}
+	handleSearch = _.debounce(e => {
+		let search = e
+		let limit = 3
+		if (search) {
+			axios.get(`https://api.locationiq.com/v1/autocomplete.php?key=416a4b95f299db&q=${search}&limit=${limit}`)
+				.then((response)=>{
+					let result = []
+					if (response.data.length!==0) {
+						response.data.forEach((data, index)=>{
+							result.push(data)
+						})
+					}
+					this.setState({
+						resultAddress: result
+					})
+				})
+		} else {
+			this.setState({
+				resultAddress: []
+			})
+		}
+	}, 500)
+	handleAddress = () => {
+		this.setState({
+			openAddress: true,
+			resultAddress: []
+		})
+	}
+	handleClose = () => {
+		this.setState({
+			openAddress: false,
+			resultAddress: []
+		})
+	}
+	handleClick = (e) => {
+		this.setState({
+			address : e.display_place,
+			openAddress: false,
+			resultAddress: []
+		})
+	}
 	componentDidMount() {
 		this.getListDate()
 		window.addEventListener('scroll', this.handleScroll)
@@ -82,6 +133,10 @@ class HomePage extends Component {
 				<Header address={this.state.address} handleAddress={()=>this.handleAddress()}/>
 				<DatePicker choosenDate={this.state.choosenDate} listDate={this.state.listDate} handleChoosenDate={(e)=>this.handleChoosenDate(e)}/>
 				<DayNightMenu open={this.state.open} day={this.state.day} handleDayNight={(e)=>this.handleDayNight(e)}/>
+				<SearchAddress openAddress={this.state.openAddress} handleClose={()=>this.handleClose()} resultAddress={this.state.resultAddress} handleChange={(e)=>this.handleChange(e)} handleClick={(e)=>this.handleClick(e)}/>
+				<ChoosenDate choosenDate={this.state.choosenDate}/>
+				<MediaCard day={this.state.day} handleCart={(e)=>this.handleCart(e)}/>
+				<CardSnakeBar item={this.state.item} />
 			</div>
 		);
 	}
